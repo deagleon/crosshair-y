@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings</title>
     <link rel="stylesheet" href="./style/style.css">
 </head>
+
 <body class="body-settings">
     <div class="container">
         <div class="header">
@@ -14,7 +16,8 @@
                 <div class="header-option reset">Reset</div>
                 <div class="header-option close">
                     <svg class="icon" width="24" height="24" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M 7.21875 5.78125 L 5.78125 7.21875 L 14.5625 16 L 5.78125 24.78125 L 7.21875 26.21875 L 16 17.4375 L 24.78125 26.21875 L 26.21875 24.78125 L 17.4375 16 L 26.21875 7.21875 L 24.78125 5.78125 L 16 14.5625 Z"/>
+                        <path
+                            d="M 7.21875 5.78125 L 5.78125 7.21875 L 14.5625 16 L 5.78125 24.78125 L 7.21875 26.21875 L 16 17.4375 L 24.78125 26.21875 L 26.21875 24.78125 L 17.4375 16 L 26.21875 7.21875 L 24.78125 5.78125 L 16 14.5625 Z" />
                     </svg>
                 </div>
             </div>
@@ -28,12 +31,12 @@
                     <div class="navigation-buttons">
                         <div class="nav-button">
                             <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M8 2 L14 8 L12 8 L8 4 L4 8 L2 8 Z" fill="currentColor"/>
+                                <path d="M8 2 L14 8 L12 8 L8 4 L4 8 L2 8 Z" fill="currentColor" />
                             </svg>
                         </div>
                         <div class="nav-button">
                             <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M8 14 L14 8 L12 8 L8 12 L4 8 L2 8 Z" fill="currentColor"/>
+                                <path d="M8 14 L14 8 L12 8 L8 12 L4 8 L2 8 Z" fill="currentColor" />
                             </svg>
                         </div>
                     </div>
@@ -97,7 +100,56 @@
                     </div>
                 </div>
             </div>
+            <div class="group-title" id="canvas-style">Canvas Style</div>
+            <div class="group" id="canvas-style-group">
+                <div class="item">
+                    <div class="label">
+                        <div>Color</div>
+                        <div class="sub-label">Direct color for canvas crosshairs</div>
+                    </div>
+                    <div class="value">
+                        <input type="color" id="canvas-color-input" value="#00ff00" class="settings-color-input">
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="label">Thickness</div>
+                    <div class="value">
+                        <custom-range min="1" max="10" step="1" value="2" id="canvas-thickness-range"></custom-range>
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="label">Gap</div>
+                    <div class="value">
+                        <custom-range min="0" max="20" step="1" value="4" id="canvas-gap-range"></custom-range>
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="label">Length</div>
+                    <div class="value">
+                        <custom-range min="2" max="30" step="1" value="8" id="canvas-length-range"></custom-range>
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="label">
+                        <div>Center Dot</div>
+                        <div class="sub-label">Show a dot at the center</div>
+                    </div>
+                    <div class="value">
+                        <custom-toggle id="canvas-dot-toggle"></custom-toggle>
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="label">
+                        <div>Outline</div>
+                        <div class="sub-label">Add a black outline to the crosshair</div>
+                    </div>
+                    <div class="value">
+                        <custom-toggle id="canvas-outline-toggle"></custom-toggle>
+                    </div>
+                </div>
+            </div>
             <div class="group">
+
                 <div class="item">
                     <div class="label">
                         <div>Load preset</div>
@@ -183,7 +235,8 @@
                         <div class="sub-label">Paste crosshair code to save to the set custom directory</div>
                     </div>
                     <div class="value">
-                        <input type="text" id="crosshair-code-input" class="settings-input" placeholder="Enter crosshair code here...">
+                        <input type="text" id="crosshair-code-input" class="settings-input"
+                            placeholder="Enter crosshair code here...">
                     </div>
                 </div>
                 <div class="item button-item" id="save-crosshair-code">
@@ -259,4 +312,5 @@
     <script src="./scripts/updates.js"></script>
     <script src="./scripts/elements.js"></script>
 </body>
+
 </html>

@@ -516,6 +516,34 @@ body.body-settings .section {
   outline: none;
 }
 
+.settings-color-input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 48px;
+  height: 32px;
+  background-color: transparent;
+  border: 1px solid var(--line-color);
+  border-radius: var(--default-px);
+  cursor: pointer;
+  padding: 2px;
+  transition: border-color 200ms;
+}
+.settings-color-input:hover {
+  border-color: var(--accent-primary);
+}
+.settings-color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.settings-color-input::-webkit-color-swatch {
+  border: none;
+  border-radius: calc(var(--default-px) - 2px);
+}
+.settings-color-input::-moz-color-swatch {
+  border: none;
+  border-radius: calc(var(--default-px) - 2px);
+}
+
 input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button {
   -webkit-appearance: none;

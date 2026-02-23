@@ -22,15 +22,16 @@
             overflow: hidden;
         }
 
-        img {
-            width: 100%;
-            height: 100%;
-            image-rendering: -webkit-optimize-contrast;
+        canvas {
+            display: block;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
         }
     </style>
 </head>
 <body>
-    <img src="" draggable="false" alt="">
+    <canvas id="crosshair-canvas"></canvas>
+    <script src="./scripts/canvas-crosshair.js"></script>
     <script src="./scripts/crosshair.js"></script>
 </body>
 </html>

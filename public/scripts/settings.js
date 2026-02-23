@@ -882,6 +882,63 @@ settings.addEventListener('click', () => {
 
         updateCrosshairSaveState();
 
+        // ─── Canvas Style Controls ────────────────────────────────────────────
+        const canvasColorInput = frameBody.querySelector('#canvas-color-input');
+        const canvasThicknessRange = frameBody.querySelector('#canvas-thickness-range');
+        const canvasGapRange = frameBody.querySelector('#canvas-gap-range');
+        const canvasLengthRange = frameBody.querySelector('#canvas-length-range');
+        const canvasDotToggle = frameBody.querySelector('#canvas-dot-toggle');
+        const canvasOutlineToggle = frameBody.querySelector('#canvas-outline-toggle');
+
+        // Função que lê o canvasParams salvo do localStorage
+        function getCanvasParams() {
+            try {
+                return JSON.parse(localStorage.getItem('canvas-config')) || {};
+            } catch { return {}; }
+        }
+
+        function sendCanvasParams(patch) {
+            const current = getCanvasParams();
+            const merged = { ...current, ...patch };
+            localStorage.setItem('canvas-config', JSON.stringify(merged));
+            ipcRenderer.send('load-canvas-params', merged);
+        }
+
+        // Inicializa valores com o que está salvo
+        const savedCanvas = getCanvasParams();
+        if (canvasColorInput) canvasColorInput.value = savedCanvas.color ?? '#00ff00';
+        if (canvasThicknessRange) canvasThicknessRange.value = savedCanvas.thickness ?? 2;
+        if (canvasGapRange) canvasGapRange.value = savedCanvas.gap ?? 4;
+        if (canvasLengthRange) canvasLengthRange.value = savedCanvas.length ?? 8;
+        if (canvasDotToggle) canvasDotToggle.checked = savedCanvas.dot ?? false;
+        if (canvasOutlineToggle) canvasOutlineToggle.checked = savedCanvas.outline ?? false;
+
+        // Listeners
+        canvasColorInput?.addEventListener('input', () => {
+            sendCanvasParams({ color: canvasColorInput.value });
+        });
+
+        canvasThicknessRange?.addEventListener('change', () => {
+            sendCanvasParams({ thickness: Number(canvasThicknessRange.value) });
+        });
+
+        canvasGapRange?.addEventListener('change', () => {
+            sendCanvasParams({ gap: Number(canvasGapRange.value) });
+        });
+
+        canvasLengthRange?.addEventListener('change', () => {
+            sendCanvasParams({ length: Number(canvasLengthRange.value) });
+        });
+
+        canvasDotToggle?.addEventListener('change', () => {
+            sendCanvasParams({ dot: canvasDotToggle.checked });
+        });
+
+        canvasOutlineToggle?.addEventListener('change', () => {
+            sendCanvasParams({ outline: canvasOutlineToggle.checked });
+        });
+        // ─────────────────────────────────────────────────────────────────────
+
         ipcRenderer.removeAllListeners('save-generated-crosshair-success');
 
         ipcRenderer.on('save-generated-crosshair-success', () => {

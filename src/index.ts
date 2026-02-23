@@ -123,7 +123,7 @@ function createTray() {
 
 function removeTray() {
     if (!tray) return;
-    
+
     try {
         tray.destroy();
     } catch (e) {
@@ -192,7 +192,7 @@ function buildTrayMenu() {
 
                 try {
                     crosshair.close();
-                } catch (e) { 
+                } catch (e) {
                     console.error('Error closing crosshair on quit:', e);
                 }
 
@@ -255,16 +255,29 @@ function showMainWindow() {
     window.focus();
 }
 
+const CANVAS_STYLES = ['Classic', 'Dot', 'T-Shape', 'Circle', 'Cross+Dot', 'Chevron'];
+
 let builtInCrosshairs: string[];
 ipcMain.on('built-in-crosshairs', async (event) => {
     try {
         const files = await fs.readdir(CROSSHAIRS_DIR);
         const pngFiles = files.filter((file) => path.extname(file) === '.png');
-        event.reply('built-in-crosshairs-response', pngFiles);
         builtInCrosshairs = pngFiles;
+        event.reply('built-in-crosshairs-response', {
+            canvas: CANVAS_STYLES,
+            png: pngFiles,
+        });
     } catch (err) {
         console.log(err);
+        // Fallback: responde só com canvas styles se falhar leitura do diretório
+        event.reply('built-in-crosshairs-response', { canvas: CANVAS_STYLES, png: [] });
     }
+});
+
+ipcMain.on('change-canvas-style', (event, styleName: string) => {
+    const id = `canvas:${styleName}`;
+    config.crosshair = id;
+    crosshair.setImage(id);
 });
 
 type Config = {
@@ -294,7 +307,7 @@ const DEFAULT_CONFIG: Config = {
     hue: 0,
     rotation: 0,
     opacity: 1,
-    crosshair: 'Simple.png',
+    crosshair: 'canvas:Classic',
     fixedPosition: false,
     xPosition: 0,
     yPosition: 0,
@@ -314,13 +327,18 @@ function getSelectedCrosshairPath() {
             } else {
                 console.warn(`Custom crosshair not found: ${fullPath}, falling back to default`);
                 customCrosshair = null;
-                return path.join(CROSSHAIRS_DIR, DEFAULT_CONFIG.crosshair);
+                return DEFAULT_CONFIG.crosshair; // canvas:Classic
             }
         } catch (error) {
             console.error('Error checking crosshair file:', error);
-            return path.join(CROSSHAIRS_DIR, DEFAULT_CONFIG.crosshair);
+            return DEFAULT_CONFIG.crosshair;
         }
     } else {
+        // Estilos canvas nativos: retorna o identificador direto
+        if (cfg.crosshair.startsWith('canvas:')) {
+            return cfg.crosshair;
+        }
+
         if (process.platform === 'linux') {
             return path.join(CROSSHAIRS_DIR, '..', 'public', 'crosshairs', cfg.crosshair);
         } else if (process.platform === 'win32') {
@@ -389,6 +407,10 @@ ipcMain.on('config', (event, newConfig: Config) => {
     crosshair.applyHue();
     crosshair.applyRotation();
     crosshair.applyOpacity();
+});
+
+ipcMain.on('load-canvas-params', (event, params) => {
+    crosshair.window?.webContents.send('load-canvas-params', params);
 });
 
 ipcMain.on('change-hue', (event, hue) => {

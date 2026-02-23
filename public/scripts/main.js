@@ -72,11 +72,69 @@ if (!storedTheme) {
 
 applyTheme(storedTheme);
 
-ipcRenderer.once('built-in-crosshairs-response', (event, crosshairs) => {
+const canvasStylesSection = document.getElementById('canvas-styles');
+
+ipcRenderer.once('built-in-crosshairs-response', (event, data) => {
+    // Suporte ao formato legado (array) e novo formato ({canvas, png})
+    const canvasStyles = Array.isArray(data) ? [] : (data.canvas || []);
+    const pngCrosshairs = Array.isArray(data) ? data : (data.png || []);
+
+    // ─── Seção Canvas ────────────────────────────────────────────────────────
+    if (canvasStylesSection) {
+        canvasStylesSection.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+
+        canvasStyles.forEach(styleName => {
+            const div = document.createElement('div');
+            div.className = 'crosshair';
+
+            // Mini-canvas como preview
+            const previewCanvas = document.createElement('canvas');
+            previewCanvas.width = 40;
+            previewCanvas.height = 40;
+            previewCanvas.style.width = '40px';
+            previewCanvas.style.height = '40px';
+            previewCanvas.draggable = false;
+
+            if (typeof CanvasCrosshair !== 'undefined') {
+                CanvasCrosshair.draw(previewCanvas, {
+                    style: styleName,
+                    color: '#00ff00',
+                    thickness: 2,
+                    gap: 4,
+                    length: 8,
+                    opacity: 1,
+                    rotation: 0,
+                });
+            }
+
+            const textDiv = document.createElement('div');
+            textDiv.textContent = styleName;
+
+            div.appendChild(previewCanvas);
+            div.appendChild(textDiv);
+
+            div.addEventListener('click', () => {
+                localStorage.removeItem('custom-crosshair');
+                ipcRenderer.send('change-canvas-style', styleName);
+
+                config.crosshair = `canvas:${styleName}`;
+                localStorage.setItem('config', JSON.stringify(config));
+
+                if (typeof refreshOverlay === 'function') refreshOverlay();
+            });
+
+            fragment.appendChild(div);
+        });
+
+        canvasStylesSection.appendChild(fragment);
+    }
+
+    // ─── Seção Built-in (PNGs) ───────────────────────────────────────────────
     builtInSection.innerHTML = '';
     const fragment = document.createDocumentFragment();
 
-    crosshairs.reverse().forEach(crosshair => {
+    pngCrosshairs.reverse().forEach(crosshair => {
         const div = document.createElement('div');
         div.className = 'crosshair';
 
@@ -382,6 +440,14 @@ ipcRenderer.on('update-config-ui', (event, newConfig) => {
 
 function refreshOverlay() {
     ipcRenderer.send('destroy-crosshair');
+
+    const isCanvas = config.crosshair && config.crosshair.startsWith('canvas:');
+
+    if (isCanvas) {
+        const styleName = config.crosshair.replace('canvas:', '');
+        ipcRenderer.send('change-canvas-style', styleName);
+    }
+
     ipcRenderer.send('change-hue', config.hue);
     ipcRenderer.send('change-rotation', config.rotation);
     ipcRenderer.send('change-size', config.size);

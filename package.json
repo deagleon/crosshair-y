@@ -21,6 +21,7 @@
   "devDependencies": {
     "@types/node": "^22.10.2",
     "@types/openurl": "^1.0.3",
-    "electron-packager": "^17.1.2"
+    "electron-packager": "^17.1.2",
+    "typescript": "^5.9.3"
   }
 }
