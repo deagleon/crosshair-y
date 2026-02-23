@@ -435,6 +435,69 @@ settings.addEventListener('click', () => {
             ipcRenderer.send('change-fixed-position', config.fixedPosition);
         });
 
+        // ─── Monitor / Display Selection ──────────────────────────────────────
+        const displaySelect = frameBody.querySelector('#display-select');
+        const recenterBtn = frameBody.querySelector('#recenter-btn');
+
+        ipcRenderer.send('get-displays');
+        ipcRenderer.once('displays-list', (event, displays) => {
+            if (!displaySelect) return;
+
+            // Limpa opções padrão e reconstrói com dados reais
+            displaySelect.innerHTML = `
+                <option value="primary">Primary</option>
+                <option value="cursor">Where cursor is</option>
+            `;
+
+            displays.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = String(d.index);
+                const tag = d.isPrimary ? ' (Primary)' : '';
+                const res = `${d.bounds.width}×${d.bounds.height}`;
+                opt.textContent = `${d.label}${tag} — ${res}`;
+                displaySelect.appendChild(opt);
+            });
+
+            displaySelect._parseOptions?.();
+
+            // Restaura o valor salvo
+            const saved = localStorage.getItem('display-target') || 'primary';
+            displaySelect.value = saved;
+        });
+
+        displaySelect?.addEventListener('change', () => {
+            const raw = displaySelect.value;
+            const target = (raw === 'primary' || raw === 'cursor')
+                ? raw
+                : Number(raw);
+
+            localStorage.setItem('display-target', String(raw));
+            ipcRenderer.send('set-display', target);
+        });
+
+        recenterBtn?.addEventListener('click', () => {
+            ipcRenderer.send('recenter-crosshair');
+
+            // Aguarda a resposta com as coordenadas calculadas e atualiza os inputs
+            ipcRenderer.once('center-coords', (event, { x, y }) => {
+                if (xPositionInput) {
+                    xPositionInput.value = x;
+                    xPositionInput.title = x;
+                }
+                if (yPositionInput) {
+                    yPositionInput.value = y;
+                    yPositionInput.title = y;
+                }
+
+                // Persiste as novas coordenadas no config
+                config.xPosition = x;
+                config.yPosition = y;
+                localStorage.setItem('config', JSON.stringify(config));
+            });
+        });
+        // ─────────────────────────────────────────────────────────────────────
+
+
         xPositionInput.value = config.xPosition || 0;
         xPositionInput.title = xPositionInput.value;
         xPositionInput.addEventListener('change', () => {

@@ -413,6 +413,39 @@ ipcMain.on('load-canvas-params', (event, params) => {
     crosshair.window?.webContents.send('load-canvas-params', params);
 });
 
+/**
+ * Retorna lista de todos os monitores disponíveis.
+ * Resposta: Array<{ index, id, label, bounds, isPrimary, scaleFactor }>
+ */
+ipcMain.on('get-displays', (event) => {
+    const all = screen.getAllDisplays();
+    const primary = screen.getPrimaryDisplay();
+
+    const list = all.map((d, index) => ({
+        index,
+        id: d.id,
+        label: d.label || `Monitor ${index + 1}`,
+        bounds: d.bounds,         // { x, y, width, height }
+        workArea: d.workArea,     // área sem taskbar
+        scaleFactor: d.scaleFactor,
+        isPrimary: d.id === primary.id,
+    }));
+
+    event.reply('displays-list', list);
+});
+
+/**
+ * Define o monitor onde a mira será centralizada.
+ * target: 'primary' | 'cursor' | number (índice)
+ */
+ipcMain.on('set-display', (event, target: 'primary' | 'cursor' | number) => {
+    crosshair.displayTarget = target;
+    if (!crosshair.fixedPosition) {
+        crosshair.setBounds();
+    }
+});
+
+
 ipcMain.on('change-hue', (event, hue) => {
     crosshair.hue = +hue;
     crosshair.applyHue();

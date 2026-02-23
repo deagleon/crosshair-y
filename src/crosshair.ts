@@ -1,5 +1,7 @@
-import { app, BrowserWindow, screen, ipcMain } from 'electron';
+import { app, BrowserWindow, screen, ipcMain, Display } from 'electron';
 import path from 'path';
+
+type DisplayTarget = 'primary' | 'cursor' | number; // number = índice do display
 
 class CrosshairOverlay {
     public window: BrowserWindow | null = null;
@@ -11,7 +13,33 @@ class CrosshairOverlay {
     public xPosition: number = 0;
     public yPosition: number = 0;
 
+    /** Qual monitor usar para centralizar a mira.
+     *  'primary' → monitor principal (padrão)
+     *  'cursor'  → monitor onde o cursor está no momento do setBounds
+     *  number    → índice do display na lista screen.getAllDisplays()
+     */
+    public displayTarget: DisplayTarget = 'primary';
+
     constructor() { }
+
+    /** Retorna o Display correto baseado em displayTarget. */
+    private getTargetDisplay(): Display {
+        const all = screen.getAllDisplays();
+
+        if (this.displayTarget === 'cursor') {
+            const point = screen.getCursorScreenPoint();
+            const found = screen.getDisplayNearestPoint(point);
+            return found ?? screen.getPrimaryDisplay();
+        }
+
+        if (typeof this.displayTarget === 'number') {
+            const byIndex = all[this.displayTarget];
+            if (byIndex) return byIndex;
+            console.warn(`[CrosshairOverlay] Display index ${this.displayTarget} não encontrado, usando primário.`);
+        }
+
+        return screen.getPrimaryDisplay();
+    }
 
     async open(imagePath: string) {
         await app.whenReady();
@@ -70,6 +98,14 @@ class CrosshairOverlay {
                 this.fixedPosition = fixedPosition;
                 this.setBounds();
             });
+            ipcMain.on('recenter-crosshair', (event) => {
+                if (!this.fixedPosition) {
+                    this.setBounds();
+                    const coords = this.getCenterCoords();
+                    // Responde ao remetente (iframe de settings via preload)
+                    event.reply('center-coords', coords);
+                }
+            });
 
             ipcMain.on('change-x-position', (event, xPosition) => {
                 this.xPosition = xPosition;
@@ -93,26 +129,30 @@ class CrosshairOverlay {
     }
 
     setBounds() {
-        if (this.window) {
-            const { width, height } = screen.getPrimaryDisplay().size;
-            let x = this.xPosition;
-            let y = this.yPosition;
+        if (!this.window) return;
 
-            if (this.fixedPosition) {
-                x = Math.round(this.xPosition - (this.size / 2));
-                y = Math.round(this.yPosition - (this.size / 2));
-            } else {
-                x = Math.round(width / 2 - (this.size / 2));
-                y = Math.round(height / 2 - (this.size / 2));
-            }
+        const display = this.getTargetDisplay();
+        const { x: dX, y: dY, width, height } = display.bounds;
 
-            this.window.setBounds({
-                x: x,
-                y: y,
-                width: this.size,
-                height: this.size,
-            });
+        let x: number;
+        let y: number;
+
+        if (this.fixedPosition) {
+            // Posição fixa: coordenadas absolutas fornecidas pelo usuário
+            x = Math.round(this.xPosition - (this.size / 2));
+            y = Math.round(this.yPosition - (this.size / 2));
+        } else {
+            // Centro exato do monitor-alvo (usando bounds, não workArea, para ignorar taskbar)
+            x = Math.round(dX + width / 2 - this.size / 2);
+            y = Math.round(dY + height / 2 - this.size / 2);
         }
+
+        this.window.setBounds({
+            x,
+            y,
+            width: this.size,
+            height: this.size,
+        });
     }
 
     applyHue() {
@@ -131,6 +171,16 @@ class CrosshairOverlay {
 
     applyOpacity() {
         this.window?.webContents.send('load-opacity', this.opacity);
+    }
+
+    /** Retorna as coordenadas do centro do monitor-alvo (coordenadas absolutas do pixel central). */
+    getCenterCoords(): { x: number; y: number } {
+        const display = this.getTargetDisplay();
+        const { x: dX, y: dY, width, height } = display.bounds;
+        return {
+            x: Math.round(dX + width / 2),
+            y: Math.round(dY + height / 2),
+        };
     }
 
     setImage(imagePath: string) {

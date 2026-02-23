@@ -24,6 +24,16 @@ ipcRenderer.send('change-custom-crosshair', localStorage.getItem('custom-crossha
 ipcRenderer.send('config', config);
 ipcRenderer.send('change-opacity', config.opacity || 1);
 
+// Restaura a preferência de monitor salva
+const savedDisplayTarget = localStorage.getItem('display-target');
+if (savedDisplayTarget) {
+    const target = (savedDisplayTarget === 'primary' || savedDisplayTarget === 'cursor')
+        ? savedDisplayTarget
+        : Number(savedDisplayTarget);
+    ipcRenderer.send('set-display', target);
+}
+
+
 const container = document.querySelector('.container');
 const builtInSection = document.getElementById('built-in');
 const customSection = document.getElementById('custom');
