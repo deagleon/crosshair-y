@@ -440,6 +440,8 @@ settings.addEventListener("click", () => {
       sizeRange.title = currentValue;
       localStorage.setItem("config", JSON.stringify(config));
       debouncedSendSize(currentValue);
+      // Also propagate size into canvas-config so drawPixelCrosshair can scale correctly.
+      sendCanvasParams({ size: Number(currentValue) });
     });
 
     hueRange.value = config.hue || 0;
@@ -1132,6 +1134,12 @@ settings.addEventListener("click", () => {
       canvasOutlineOpacityRange.value = savedCanvas.outlineOpacity ?? 1;
     if (canvasOutlineOpacityInput)
       canvasOutlineOpacityInput.value = savedCanvas.outlineOpacity ?? 1;
+
+    // Seed the current Size into canvas-config so drawPixelCrosshair has it from
+    // the very first render, even if the user hasn't moved the Size slider yet.
+    if (savedCanvas.size === undefined) {
+      sendCanvasParams({ size: Number(config.size ?? 40) });
+    }
 
     // Listeners
     canvasStyleSelect?.addEventListener("change", () => {

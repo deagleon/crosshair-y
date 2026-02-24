@@ -512,6 +512,7 @@ function drawAngledBrackets(ctx, params) {
  * @param {CanvasRenderingContext2D} ctx
  * @param {Object} params
  * @param {number[]|null} params.pixelData - Flat array of PIXEL_GRID_SIZE² values (0 or 1).
+ * @param {number}  [params.size]             - Window size in CSS px (driven by the Size slider).
  * @param {string}  [params.color]            - Fill color for active pixels.
  * @param {boolean} [params.outline]          - Draw an outline around active pixels.
  * @param {number}  [params.outlineThickness] - Outline thickness in px.
@@ -524,13 +525,12 @@ function drawPixelCrosshair(ctx, params) {
   const pixelData = params.pixelData;
   if (!pixelData || pixelData.length !== PIXEL_GRID_SIZE * PIXEL_GRID_SIZE) return;
 
-  // Derive a pixel cell size from the canvas logical dimensions so that the
-  // crosshair scales naturally with the existing Size slider.
-  // The canvas element's CSS width is available via ctx.canvas.style.width.
-  const canvasW = parseFloat(ctx.canvas.style.width) || ctx.canvas.width;
-  // Fill ~70% of the smaller canvas dimension, divided evenly across all cells.
-  const gridPx = Math.floor((Math.min(canvasW, parseFloat(ctx.canvas.style.height) || ctx.canvas.height) * 0.7) / PIXEL_GRID_SIZE);
-  const cellSize = Math.max(1, gridPx);
+  // The Electron window is sized to Math.max(gap+length+40, size) — for Pixel Draw,
+  // gap/length/thickness are 0 so the window equals params.size exactly.
+  // Use params.size directly so the Size slider linearly controls the grid scale.
+  const windowSize = params.size ?? 40;
+  // Fill ~80% of the window, divided evenly across all cells.
+  const cellSize = Math.max(1, Math.floor((windowSize * 0.8) / PIXEL_GRID_SIZE));
 
   const totalSize = cellSize * PIXEL_GRID_SIZE;
   const offset = totalSize / 2; // Center the grid on the translated origin.
@@ -550,6 +550,7 @@ function drawPixelCrosshair(ctx, params) {
     }
   }
 }
+
 
 // ─── External image fallback ──────────────────────────────────────────────────
 

@@ -214,9 +214,14 @@ class CrosshairOverlay {
       const arm = Math.max(0, this.canvasGap + this.canvasLength);
       const diameter = arm * 2 + this.canvasThickness + 40;
 
+      // For styles like "Pixel Draw" that have no gap/length/thickness, the
+      // diameter would be 40px. Use this.size as a lower bound so the Size
+      // slider always drives the window size (and therefore the pixel scale).
+      const effective = Math.max(diameter, this.size);
+
       // Never exceed the smaller screen dimension (no fullscreen overlays).
       const screenCap = Math.min(width, height);
-      const capped = Math.min(diameter, screenCap);
+      const capped = Math.min(effective, screenCap);
       w = capped;
       h = capped;
     }
