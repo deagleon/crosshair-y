@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Settings</title>
-    <link rel="stylesheet" href="./style/style.css">
+    <link rel="stylesheet" href="./style/style.css" />
 </head>
 
 <body class="body-settings">
@@ -27,7 +27,7 @@
                 <div class="navigation-tabs"></div>
                 <div class="navigation-input">
                     <div class="items-found">0/0</div>
-                    <input type="text" placeholder="Search settings..." id="search-input">
+                    <input type="text" placeholder="Search settings..." id="search-input" />
                     <div class="navigation-buttons">
                         <div class="nav-button">
                             <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
@@ -42,13 +42,14 @@
                     </div>
                 </div>
             </div>
-            <br>
+            <br />
             <div class="group-title" id="crosshair">Crosshair</div>
+            <!-- General controls: size, opacity, rotation -->
             <div class="group">
                 <div class="item">
                     <div class="label">Size</div>
                     <div class="value">
-                        <custom-range min="20" max="120" value="40" id="size-range"></custom-range>
+                        <custom-range min="2" max="120" value="40" id="size-range"></custom-range>
                     </div>
                 </div>
                 <div class="item">
@@ -69,6 +70,104 @@
                         <custom-range min="0.3" max="1" step="0.1" value="1" id="opacity-range"></custom-range>
                     </div>
                 </div>
+            </div>
+            <!-- Canvas Style controls -->
+            <div class="group" id="canvas-style-group">
+                <div class="item">
+                    <div class="label">Style</div>
+                    <div class="value">
+                        <custom-select id="canvas-style-select">
+                            <!-- Populated via JS -->
+                        </custom-select>
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="label">Color</div>
+                    <div class="value">
+                        <input type="color" id="canvas-color-input" value="#00ff00" class="settings-color-input" />
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="label">Gap</div>
+                    <div class="value">
+                        <div class="range-with-input">
+                            <custom-range min="-100" max="2500" step="1" value="4" id="canvas-gap-range"></custom-range>
+                            <input type="number" min="-100" max="2500" step="1" value="4" id="canvas-gap-input"
+                                class="range-num-input" />
+                        </div>
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="label">Length</div>
+                    <div class="value">
+                        <div class="range-with-input">
+                            <custom-range min="0" max="5000" step="1" value="8" id="canvas-length-range"></custom-range>
+                            <input type="number" min="0" max="5000" step="1" value="8" id="canvas-length-input"
+                                class="range-num-input" />
+                        </div>
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="label">Thickness</div>
+                    <div class="value">
+                        <div class="range-with-input">
+                            <custom-range min="1" max="500" step="1" value="2"
+                                id="canvas-thickness-range"></custom-range>
+                            <input type="number" min="1" max="500" step="1" value="2" id="canvas-thickness-input"
+                                class="range-num-input" />
+                        </div>
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="label">
+                        <div>Center Dot</div>
+                        <div class="sub-label">Show a dot at the center</div>
+                    </div>
+                    <div class="value">
+                        <custom-toggle id="canvas-dot-toggle"></custom-toggle>
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="label">
+                        <div>Outline</div>
+                        <div class="sub-label">Add a black outline to the crosshair</div>
+                    </div>
+                    <div class="value">
+                        <custom-toggle id="canvas-outline-toggle"></custom-toggle>
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="label">Outline Color</div>
+                    <div class="value">
+                        <input type="color" id="canvas-outline-color-input" value="#000000"
+                            class="settings-color-input" />
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="label">Outline Thickness</div>
+                    <div class="value">
+                        <div class="range-with-input">
+                            <custom-range min="0" max="10" step="1" value="1"
+                                id="canvas-outline-thickness-range"></custom-range>
+                            <input type="number" min="0" max="10" step="1" value="1" id="canvas-outline-thickness-input"
+                                class="range-num-input" />
+                        </div>
+                    </div>
+                </div>
+                <div class="item">
+                    <div class="label">Outline Opacity</div>
+                    <div class="value">
+                        <div class="range-with-input">
+                            <custom-range min="0" max="1" step="0.1" value="1"
+                                id="canvas-outline-opacity-range"></custom-range>
+                            <input type="number" min="0" max="1" step="0.1" value="1" id="canvas-outline-opacity-input"
+                                class="range-num-input" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Position controls -->
+            <div class="group">
                 <div class="item">
                     <div class="label">
                         <div>Monitor</div>
@@ -102,13 +201,15 @@
                 <div class="item">
                     <div class="label">X Position</div>
                     <div class="value">
-                        <input type="number" min="0" max="1920" value="0" id="x-position-input" class="settings-input">
+                        <input type="number" min="0" max="1920" value="0" id="x-position-input"
+                            class="settings-input" />
                     </div>
                 </div>
                 <div class="item">
                     <div class="label">Y Position</div>
                     <div class="value">
-                        <input type="number" min="0" max="1080" value="0" id="y-position-input" class="settings-input">
+                        <input type="number" min="0" max="1080" value="0" id="y-position-input"
+                            class="settings-input" />
                     </div>
                 </div>
                 <div class="item">
@@ -121,56 +222,41 @@
                     </div>
                 </div>
             </div>
-            <div class="group-title" id="canvas-style">Canvas Style</div>
-            <div class="group" id="canvas-style-group">
-                <div class="item">
+            <!-- Custom Crosshair: directory & code import -->
+            <div class="group">
+                <div class="item button-item" id="set-directory">
                     <div class="label">
-                        <div>Color</div>
-                        <div class="sub-label">Direct color for canvas crosshairs</div>
-                    </div>
-                    <div class="value">
-                        <input type="color" id="canvas-color-input" value="#00ff00" class="settings-color-input">
+                        <div>Set directory</div>
+                        <div class="sub-label">No directory</div>
                     </div>
                 </div>
-                <div class="item">
-                    <div class="label">Thickness</div>
-                    <div class="value">
-                        <custom-range min="1" max="10" step="1" value="2" id="canvas-thickness-range"></custom-range>
-                    </div>
-                </div>
-                <div class="item">
-                    <div class="label">Gap</div>
-                    <div class="value">
-                        <custom-range min="0" max="20" step="1" value="4" id="canvas-gap-range"></custom-range>
-                    </div>
-                </div>
-                <div class="item">
-                    <div class="label">Length</div>
-                    <div class="value">
-                        <custom-range min="2" max="30" step="1" value="8" id="canvas-length-range"></custom-range>
-                    </div>
-                </div>
-                <div class="item">
+                <div class="item button-item" id="remove-directory">
                     <div class="label">
-                        <div>Center Dot</div>
-                        <div class="sub-label">Show a dot at the center</div>
-                    </div>
-                    <div class="value">
-                        <custom-toggle id="canvas-dot-toggle"></custom-toggle>
-                    </div>
-                </div>
-                <div class="item">
-                    <div class="label">
-                        <div>Outline</div>
-                        <div class="sub-label">Add a black outline to the crosshair</div>
-                    </div>
-                    <div class="value">
-                        <custom-toggle id="canvas-outline-toggle"></custom-toggle>
+                        <div>Remove directory</div>
+                        <div class="sub-label">Remove the current directory</div>
                     </div>
                 </div>
             </div>
             <div class="group">
-
+                <div class="item">
+                    <div class="label">
+                        <div>Crosshair Code</div>
+                        <div class="sub-label">Paste crosshair code to save to the set custom directory</div>
+                    </div>
+                    <div class="value">
+                        <input type="text" id="crosshair-code-input" class="settings-input"
+                            placeholder="Enter crosshair code here..." />
+                    </div>
+                </div>
+                <div class="item button-item" id="save-crosshair-code">
+                    <div class="label">
+                        <div>Save Crosshair</div>
+                        <div class="sub-label">Save the crosshair code to the set custom directory</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Presets -->
+            <div class="group">
                 <div class="item">
                     <div class="label">
                         <div>Load preset</div>
@@ -224,7 +310,7 @@
                 <div class="item">
                     <div class="label">
                         <div>Import presets</div>
-                        <div class="sub-label">Export presets</div>
+                        <div class="sub-label">Import presets</div>
                     </div>
                     <div class="value">
                         <multi-buttons id="import-presets" value="Import">
@@ -234,45 +320,14 @@
                     </div>
                 </div>
             </div>
-            <div class="group-title" id="custom-crosshair">Custom Crosshair</div>
-            <div class="group">
-                <div class="item button-item" id="set-directory">
-                    <div class="label">
-                        <div>Set directory</div>
-                        <div class="sub-label">No directory</div>
-                    </div>
-                </div>
-                <div class="item button-item" id="remove-directory">
-                    <div class="label">
-                        <div>Remove directory</div>
-                        <div class="sub-label">Remove the current directory</div>
-                    </div>
-                </div>
-            </div>
-            <div class="group">
-                <div class="item">
-                    <div class="label">
-                        <div>Crosshair Code</div>
-                        <div class="sub-label">Paste crosshair code to save to the set custom directory</div>
-                    </div>
-                    <div class="value">
-                        <input type="text" id="crosshair-code-input" class="settings-input"
-                            placeholder="Enter crosshair code here...">
-                    </div>
-                </div>
-                <div class="item button-item" id="save-crosshair-code">
-                    <div class="label">
-                        <div>Save Crosshair</div>
-                        <div class="sub-label">Save the crosshair code to the set custom directory</div>
-                    </div>
-                </div>
-            </div>
             <div class="group-title" id="visuals">Visuals</div>
             <div class="group">
                 <div class="item">
                     <div class="label">
                         <div>Theme</div>
-                        <div class="sub-label">Select the application's visual style</div>
+                        <div class="sub-label">
+                            Select the application's visual style
+                        </div>
                     </div>
                     <div class="value">
                         <custom-select id="theme-select" checked>
@@ -284,11 +339,15 @@
                 <div class="item">
                     <div class="label">
                         <div>Reduced Motion</div>
-                        <div class="sub-label">Limits animations for a simpler interface</div>
+                        <div class="sub-label">
+                            Limits animations for a simpler interface
+                        </div>
                     </div>
                     <div class="value">
                         <custom-select id="reduced-motion-select">
-                            <option value="system" selected>Follow System</option>
+                            <option value="system" selected>
+                                Follow System
+                            </option>
                             <option value="on">ON</option>
                             <option value="off">OFF</option>
                         </custom-select>
@@ -300,7 +359,9 @@
                 <div class="item button-item" id="about">
                     <div class="label">
                         <div>About</div>
-                        <div class="sub-label">Information about the app</div>
+                        <div class="sub-label">
+                            Information about the app
+                        </div>
                     </div>
                 </div>
                 <div class="item button-item" id="check-for-updates">
@@ -312,7 +373,10 @@
                 <div class="item" id="auto-updater">
                     <div class="label">
                         <div>Auto updates</div>
-                        <div class="sub-label">Automatically check for updates as the app starts</div>
+                        <div class="sub-label">
+                            Automatically check for updates as the app
+                            starts
+                        </div>
                     </div>
                     <div class="value">
                         <custom-toggle id="auto-updates-toggle"></custom-toggle>
@@ -321,7 +385,9 @@
                 <div class="item">
                     <div class="label">
                         <div>System Tray</div>
-                        <div class="sub-label">Show application icon in the system tray</div>
+                        <div class="sub-label">
+                            Show application icon in the system tray
+                        </div>
                     </div>
                     <div class="value">
                         <custom-toggle id="system-tray-toggle" checked></custom-toggle>
@@ -331,6 +397,7 @@
         </div>
     </div>
     <script src="./scripts/updates.js"></script>
+    <script src="./scripts/canvas-crosshair.js"></script>
     <script src="./scripts/elements.js"></script>
 </body>
 

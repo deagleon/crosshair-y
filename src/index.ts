@@ -1,713 +1,765 @@
 import {
-    app,
-    BrowserWindow,
-    dialog,
-    ipcMain,
-    globalShortcut,
-    Tray,
-    Menu,
-    nativeImage,
-    MenuItemConstructorOptions,
-    screen
-} from 'electron';
-import fs from 'fs/promises';
-import _fs from 'fs';
-import path from 'path';
-import openurl from 'openurl';
-import axios from 'axios';
-import childProcess from 'child_process';
-import CrosshairOverlay = require('./crosshair');
-import createEditorWindow from './editor';
-import { arch, platform, release } from 'os';
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  globalShortcut,
+  Tray,
+  Menu,
+  nativeImage,
+  MenuItemConstructorOptions,
+  screen,
+} from "electron";
+import fs from "fs/promises";
+import _fs from "fs";
+import path from "path";
+import openurl from "openurl";
+import axios from "axios";
+import childProcess from "child_process";
+import CrosshairOverlay = require("./crosshair");
+import createEditorWindow from "./editor";
+import { arch, platform, release } from "os";
 
-let lastPosition: { x: number | undefined, y: number | undefined } = { x: undefined, y: undefined };
+let lastPosition: { x: number | undefined; y: number | undefined } = {
+  x: undefined,
+  y: undefined,
+};
 let window: BrowserWindow;
 let tray: Tray | null = null;
 const crosshair = new CrosshairOverlay();
-const CROSSHAIRS_DIR = path.join(app.getAppPath(), 'public', 'crosshairs');
+const CROSSHAIRS_DIR = path.join(app.getAppPath(), "public", "crosshairs");
 
 let isQuitting = false;
 
-app.on('ready', () => {
-    window = new BrowserWindow({
-        width: 800,
-        height: 500,
-        minWidth: 567,
-        minHeight: 393,
-        autoHideMenuBar: true,
-        icon: path.join(app.getAppPath(), '..', '/icon.ico'),
-        show: false,
-        webPreferences: {
-            nodeIntegration: false,
-            contextIsolation: true,
-            preload: path.join(__dirname, 'preload.js')
-        }
-    });
+app.on("ready", () => {
+  window = new BrowserWindow({
+    width: 800,
+    height: 500,
+    minWidth: 567,
+    minHeight: 393,
+    autoHideMenuBar: true,
+    icon: path.join(app.getAppPath(), "..", "/icon.ico"),
+    show: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, "preload.js"),
+    },
+  });
 
-    window.setMenu(null);
-    window.loadFile(path.join(app.getAppPath(), 'public', 'index.html'));
+  window.setMenu(null);
+  window.loadFile(path.join(app.getAppPath(), "public", "index.html"));
 
-    window.on('hide', () => {
-        const [x, y] = window.getPosition();
-        lastPosition = { x, y };
-    });
+  window.on("hide", () => {
+    const [x, y] = window.getPosition();
+    lastPosition = { x, y };
+  });
 
-    window.on('close', (e) => {
-        if (!isQuitting && tray && !tray.isDestroyed()) {
-            e.preventDefault();
-            window.hide();
-        }
-    });
+  window.on("close", (e) => {
+    if (!isQuitting && tray && !tray.isDestroyed()) {
+      e.preventDefault();
+      window.hide();
+    }
+  });
 
-    window.on('closed', () => {
-        try {
-            if (crosshair) crosshair.close();
-        } catch (err) {
-            console.error("Error closing crosshair:", err);
-        }
-
-        window = null as any;
-        app.quit();
-    });
-
+  window.on("closed", () => {
     try {
-        globalShortcut.register('CommandOrControl+Shift+S', () => {
-            const { x, y } = screen.getCursorScreenPoint();
-            if (window && !window.isDestroyed()) {
-                window.webContents.send('mouse-position', { x, y });
-            }
-        });
-    } catch (error) {
-        console.error('Failed to register global shortcut', error);
+      if (crosshair) crosshair.close();
+    } catch (err) {
+      console.error("Error closing crosshair:", err);
     }
 
-    showMainWindow();
+    window = null as any;
+    app.quit();
+  });
+
+  try {
+    globalShortcut.register("CommandOrControl+Shift+S", () => {
+      const { x, y } = screen.getCursorScreenPoint();
+      if (window && !window.isDestroyed()) {
+        window.webContents.send("mouse-position", { x, y });
+      }
+    });
+  } catch (error) {
+    console.error("Failed to register global shortcut", error);
+  }
+
+  showMainWindow();
 });
 
-app.on('before-quit', () => {
-    isQuitting = true;
+app.on("before-quit", () => {
+  isQuitting = true;
 });
 
-app.on('will-quit', () => {
-    globalShortcut.unregisterAll();
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
 
-    try {
-        if (crosshair) crosshair.close();
-    } catch (e) {
-        console.error('Error closing crosshair on will-quit:', e);
-    }
+  try {
+    if (crosshair) crosshair.close();
+  } catch (e) {
+    console.error("Error closing crosshair on will-quit:", e);
+  }
 });
 
-ipcMain.on('restart-app', () => {
-    app.relaunch();
-    app.exit(0);
+ipcMain.on("restart-app", () => {
+  app.relaunch();
+  app.exit(0);
 });
 
 function createTray() {
-    if (tray) return;
+  if (tray) return;
 
-    try {
-        const iconPath = path.join(__dirname, '..', '/icon.png');
-        const trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16 });
+  try {
+    const iconPath = path.join(__dirname, "..", "/icon.png");
+    const trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16 });
 
-        tray = new Tray(trayIcon);
-        tray.setToolTip('Crosshair Y');
-        tray.on('click', () => showMainWindow());
+    tray = new Tray(trayIcon);
+    tray.setToolTip("Crosshair Y");
+    tray.on("click", () => showMainWindow());
 
-        buildTrayMenu();
-    } catch (error) {
-        console.error("Failed to create tray:", error);
-        tray = null;
-    }
+    buildTrayMenu();
+  } catch (error) {
+    console.error("Failed to create tray:", error);
+    tray = null;
+  }
 }
 
 function removeTray() {
-    if (!tray) return;
+  if (!tray) return;
 
-    try {
-        tray.destroy();
-    } catch (e) {
-        console.error(e);
-    }
-    tray = null;
+  try {
+    tray.destroy();
+  } catch (e) {
+    console.error(e);
+  }
+  tray = null;
 }
 
-ipcMain.on('toggle-tray', (event, shouldShow) => {
-    const show = shouldShow === true || shouldShow === 'true';
-    if (show) {
-        createTray();
-    } else {
-        removeTray();
-    }
+ipcMain.on("toggle-tray", (event, shouldShow) => {
+  const show = shouldShow === true || shouldShow === "true";
+  if (show) {
+    createTray();
+  } else {
+    removeTray();
+  }
 });
 
 let currentPresets: Record<string, Config> = {};
 
-ipcMain.on('update-tray-presets', (event, presets) => {
-    currentPresets = presets || {};
-    buildTrayMenu();
+ipcMain.on("update-tray-presets", (event, presets) => {
+  currentPresets = presets || {};
+  buildTrayMenu();
 });
 
 function buildTrayMenu() {
-    if (!tray || tray.isDestroyed()) return;
+  if (!tray || tray.isDestroyed()) return;
 
-    const presetKeys = Object.keys(currentPresets);
-    const hasPresets = presetKeys.length > 0;
+  const presetKeys = Object.keys(currentPresets);
+  const hasPresets = presetKeys.length > 0;
 
-    const presetMenu: MenuItemConstructorOptions[] = presetKeys.map(name => ({
-        label: name,
-        click: () => applyPresetFromTray(currentPresets[name])
-    }));
+  const presetMenu: MenuItemConstructorOptions[] = presetKeys.map((name) => ({
+    label: name,
+    click: () => applyPresetFromTray(currentPresets[name]),
+  }));
 
-    const contextMenu = Menu.buildFromTemplate([
-        {
-            label: 'Show/Hide',
-            click: () => {
-                if (window.isVisible() && !window.isMinimized()) {
-                    window.hide();
-                } else {
-                    showMainWindow();
-                }
-            }
-        },
-        {
-            label: 'Toggle',
-            click: () => {
-                if (window && !window.isDestroyed()) {
-                    window.webContents.send('tray-toggle');
-                }
-            }
-        },
-        { type: 'separator' },
-        {
-            label: 'Presets',
-            enabled: hasPresets,
-            submenu: hasPresets ? presetMenu : undefined
-        },
-        { type: 'separator' },
-        {
-            label: 'Quit',
-            click: () => {
-                isQuitting = true;
-
-                try {
-                    crosshair.close();
-                } catch (e) {
-                    console.error('Error closing crosshair on quit:', e);
-                }
-
-                app.quit();
-            }
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: "Show/Hide",
+      click: () => {
+        if (window.isVisible() && !window.isMinimized()) {
+          window.hide();
+        } else {
+          showMainWindow();
         }
-    ]);
+      },
+    },
+    {
+      label: "Toggle",
+      click: () => {
+        if (window && !window.isDestroyed()) {
+          window.webContents.send("tray-toggle");
+        }
+      },
+    },
+    { type: "separator" },
+    {
+      label: "Presets",
+      enabled: hasPresets,
+      submenu: hasPresets ? presetMenu : undefined,
+    },
+    { type: "separator" },
+    {
+      label: "Quit",
+      click: () => {
+        isQuitting = true;
 
-    tray.setContextMenu(contextMenu);
+        try {
+          crosshair.close();
+        } catch (e) {
+          console.error("Error closing crosshair on quit:", e);
+        }
+
+        app.quit();
+      },
+    },
+  ]);
+
+  tray.setContextMenu(contextMenu);
 }
 
 function applyPresetFromTray(presetConfig: Config) {
-    config = { ...config, ...presetConfig };
+  config = { ...config, ...presetConfig };
 
-    if (config.crosshair && customCrosshairsDir) {
-        const possiblePath = path.join(customCrosshairsDir, config.crosshair);
-        if (_fs.existsSync(possiblePath) || config.crosshair.includes(customCrosshairsDir)) {
-            customCrosshair = config.crosshair.includes(path.sep) ? path.basename(config.crosshair) : config.crosshair;
-        } else {
-            customCrosshair = null;
-        }
+  if (config.crosshair && customCrosshairsDir) {
+    const possiblePath = path.join(customCrosshairsDir, config.crosshair);
+    if (
+      _fs.existsSync(possiblePath) ||
+      config.crosshair.includes(customCrosshairsDir)
+    ) {
+      customCrosshair = config.crosshair.includes(path.sep)
+        ? path.basename(config.crosshair)
+        : config.crosshair;
     } else {
-        customCrosshair = null;
+      customCrosshair = null;
     }
+  } else {
+    customCrosshair = null;
+  }
 
-    crosshair.size = +config.size;
-    crosshair.hue = +config.hue;
-    crosshair.rotation = +config.rotation;
-    crosshair.opacity = +config.opacity;
-    crosshair.fixedPosition = config.fixedPosition || false;
-    crosshair.xPosition = config.xPosition || 0;
-    crosshair.yPosition = config.yPosition || 0;
+  crosshair.size = +config.size;
+  crosshair.hue = +config.hue;
+  crosshair.rotation = +config.rotation;
+  crosshair.opacity = +config.opacity;
+  crosshair.fixedPosition = config.fixedPosition || false;
+  crosshair.xPosition = config.xPosition || 0;
+  crosshair.yPosition = config.yPosition || 0;
 
-    const selectedCrosshair = getSelectedCrosshairPath();
-    crosshair.close();
+  const selectedCrosshair = getSelectedCrosshairPath();
+  crosshair.close();
 
-    if (selectedCrosshair) {
-        crosshair.open(selectedCrosshair);
-        crosshair.show();
-    }
+  if (selectedCrosshair) {
+    crosshair.open(selectedCrosshair);
+    crosshair.show();
+  }
 
-    crosshair.applySize();
-    crosshair.applyHue();
-    crosshair.applyRotation();
-    crosshair.applyOpacity();
-    if (config.fixedPosition) crosshair.setBounds();
+  crosshair.applySize();
+  crosshair.applyHue();
+  crosshair.applyRotation();
+  crosshair.applyOpacity();
+  if (config.fixedPosition) crosshair.setBounds();
 
-    if (window && !window.isDestroyed()) {
-        window.webContents.send('update-config-ui', config);
-    }
+  if (window && !window.isDestroyed()) {
+    window.webContents.send("update-config-ui", config);
+  }
 }
 
 function showMainWindow() {
-    if (lastPosition.x !== undefined && lastPosition.y !== undefined) {
-        window.setPosition(lastPosition.x, lastPosition.y, false);
-    }
+  if (lastPosition.x !== undefined && lastPosition.y !== undefined) {
+    window.setPosition(lastPosition.x, lastPosition.y, false);
+  }
 
-    if (window.isMinimized()) window.restore();
-    window.show();
-    window.focus();
+  if (window.isMinimized()) window.restore();
+  window.show();
+  window.focus();
 }
 
-const CANVAS_STYLES = ['Classic', 'Dot', 'T-Shape', 'Circle', 'Cross+Dot', 'Chevron'];
+const CANVAS_STYLES = [
+  // Clássicos
+  "Classic",
+  "Cross+Dot",
+  "T-Shape",
+  "Two Lines",
+  "Three Angled Lines",
+  // Pontos e formas
+  "Dot",
+  "Square",
+  "Triangle",
+  // Circulares
+  "Circle",
+  "Semi-circle",
+  "Two Curves",
+  "Four Curves",
+  // Direcionais
+  "Arrow",
+  "Dual Arrow",
+  "Chevron",
+  "Angled Brackets",
+];
 
 let builtInCrosshairs: string[];
-ipcMain.on('built-in-crosshairs', async (event) => {
-    try {
-        const files = await fs.readdir(CROSSHAIRS_DIR);
-        const pngFiles = files.filter((file) => path.extname(file) === '.png');
-        builtInCrosshairs = pngFiles;
-        event.reply('built-in-crosshairs-response', {
-            canvas: CANVAS_STYLES,
-            png: pngFiles,
-        });
-    } catch (err) {
-        console.log(err);
-        // Fallback: responde só com canvas styles se falhar leitura do diretório
-        event.reply('built-in-crosshairs-response', { canvas: CANVAS_STYLES, png: [] });
-    }
+ipcMain.on("built-in-crosshairs", async (event) => {
+  try {
+    const files = await fs.readdir(CROSSHAIRS_DIR);
+    const pngFiles = files.filter((file) => path.extname(file) === ".png");
+    builtInCrosshairs = pngFiles;
+    event.reply("built-in-crosshairs-response", {
+      canvas: CANVAS_STYLES,
+      png: pngFiles,
+    });
+  } catch (err) {
+    console.log(err);
+    // Fallback: responde só com canvas styles se falhar leitura do diretório
+    event.reply("built-in-crosshairs-response", {
+      canvas: CANVAS_STYLES,
+      png: [],
+    });
+  }
 });
 
-ipcMain.on('change-canvas-style', (event, styleName: string) => {
-    const id = `canvas:${styleName}`;
-    config.crosshair = id;
-    crosshair.setImage(id);
+ipcMain.on("change-canvas-style", (event, styleName: string) => {
+  const id = `canvas:${styleName}`;
+  config.crosshair = id;
+  crosshair.setImage(id);
 });
 
 type Config = {
-    size: number;
-    hue: number;
-    rotation: number;
-    opacity: number;
-    crosshair: string;
-    fixedPosition?: boolean;
-    xPosition?: number;
-    yPosition?: number;
+  size: number;
+  hue: number;
+  rotation: number;
+  opacity: number;
+  crosshair: string;
+  fixedPosition?: boolean;
+  xPosition?: number;
+  yPosition?: number;
 };
 
 let customCrosshairsDir: string | null;
 let customCrosshair: string | null;
 
-ipcMain.on('onload-crosshair-directory', (event, directory) => {
-    customCrosshairsDir = directory;
-    if (customCrosshairsDir && customCrosshair) {
-        const selectedCrosshair = getSelectedCrosshairPath();
-        crosshair.setImage(selectedCrosshair || '');
-    }
+ipcMain.on("onload-crosshair-directory", (event, directory) => {
+  customCrosshairsDir = directory;
+  if (customCrosshairsDir && customCrosshair) {
+    const selectedCrosshair = getSelectedCrosshairPath();
+    crosshair.setImage(selectedCrosshair || "");
+  }
 });
 
 const DEFAULT_CONFIG: Config = {
-    size: 40,
-    hue: 0,
-    rotation: 0,
-    opacity: 1,
-    crosshair: 'canvas:Classic',
-    fixedPosition: false,
-    xPosition: 0,
-    yPosition: 0,
+  size: 40,
+  hue: 0,
+  rotation: 0,
+  opacity: 1,
+  crosshair: "canvas:Classic",
+  fixedPosition: false,
+  xPosition: 0,
+  yPosition: 0,
 };
 
 let config: Config = { ...DEFAULT_CONFIG };
 
 function getSelectedCrosshairPath() {
-    const cfg = config ?? DEFAULT_CONFIG;
+  const cfg = config ?? DEFAULT_CONFIG;
 
-    if (customCrosshair && customCrosshairsDir) {
-        const fullPath = path.join(customCrosshairsDir, customCrosshair);
+  if (customCrosshair && customCrosshairsDir) {
+    const fullPath = path.join(customCrosshairsDir, customCrosshair);
 
-        try {
-            if (_fs.existsSync(fullPath)) {
-                return fullPath;
-            } else {
-                console.warn(`Custom crosshair not found: ${fullPath}, falling back to default`);
-                customCrosshair = null;
-                return DEFAULT_CONFIG.crosshair; // canvas:Classic
-            }
-        } catch (error) {
-            console.error('Error checking crosshair file:', error);
-            return DEFAULT_CONFIG.crosshair;
-        }
-    } else {
-        // Estilos canvas nativos: retorna o identificador direto
-        if (cfg.crosshair.startsWith('canvas:')) {
-            return cfg.crosshair;
-        }
-
-        if (process.platform === 'linux') {
-            return path.join(CROSSHAIRS_DIR, '..', 'public', 'crosshairs', cfg.crosshair);
-        } else if (process.platform === 'win32') {
-            return path.join(CROSSHAIRS_DIR, '..', 'crosshairs', cfg.crosshair);
-        }
+    try {
+      if (_fs.existsSync(fullPath)) {
+        return fullPath;
+      } else {
+        console.warn(
+          `Custom crosshair not found: ${fullPath}, falling back to default`,
+        );
+        customCrosshair = null;
+        return DEFAULT_CONFIG.crosshair; // canvas:Classic
+      }
+    } catch (error) {
+      console.error("Error checking crosshair file:", error);
+      return DEFAULT_CONFIG.crosshair;
     }
+  } else {
+    // Estilos canvas nativos: retorna o identificador direto
+    if (cfg.crosshair.startsWith("canvas:")) {
+      return cfg.crosshair;
+    }
+
+    if (process.platform === "linux") {
+      return path.join(
+        CROSSHAIRS_DIR,
+        "..",
+        "public",
+        "crosshairs",
+        cfg.crosshair,
+      );
+    } else if (process.platform === "win32") {
+      return path.join(CROSSHAIRS_DIR, "..", "crosshairs", cfg.crosshair);
+    }
+  }
 }
 
 function getSelectedCrosshairFilename() {
-    const cfg = config ?? DEFAULT_CONFIG;
-    return (customCrosshair && customCrosshairsDir) ? customCrosshair : cfg.crosshair;
+  const cfg = config ?? DEFAULT_CONFIG;
+  return customCrosshair && customCrosshairsDir
+    ? customCrosshair
+    : cfg.crosshair;
 }
 
-ipcMain.on('get-themes', async (event) => {
-    const themesDir = path.join(app.getAppPath(), 'public', 'style', 'themes');
-    try {
-        await fs.access(themesDir);
-        const files = await fs.readdir(themesDir);
-        const cssThemes = files
-            .filter(file => file.endsWith('.css'))
-            .map(file => file.replace('.css', ''));
+ipcMain.on("get-themes", async (event) => {
+  const themesDir = path.join(app.getAppPath(), "public", "style", "themes");
+  try {
+    await fs.access(themesDir);
+    const files = await fs.readdir(themesDir);
+    const cssThemes = files
+      .filter((file) => file.endsWith(".css"))
+      .map((file) => file.replace(".css", ""));
 
-        event.reply('themes-list', cssThemes);
-    } catch (err) {
-        console.error('Error loading themes:', err);
-        event.reply('themes-list', []);
-    }
+    event.reply("themes-list", cssThemes);
+  } catch (err) {
+    console.error("Error loading themes:", err);
+    event.reply("themes-list", []);
+  }
 });
 
-ipcMain.on('change-custom-crosshair', (event, name) => {
-    customCrosshair = name;
+ipcMain.on("change-custom-crosshair", (event, name) => {
+  customCrosshair = name;
 
-    const selectedCrosshair = getSelectedCrosshairPath();
-    crosshair.setImage(selectedCrosshair || '');
+  const selectedCrosshair = getSelectedCrosshairPath();
+  crosshair.setImage(selectedCrosshair || "");
 
-    crosshair.size = +config.size;
-    crosshair.hue = +config.hue;
-    crosshair.rotation = +config.rotation;
-    crosshair.opacity = +config.opacity;
+  crosshair.size = +config.size;
+  crosshair.hue = +config.hue;
+  crosshair.rotation = +config.rotation;
+  crosshair.opacity = +config.opacity;
 
-    crosshair.applySize();
-    crosshair.applyHue();
-    crosshair.applyRotation();
-    crosshair.applyOpacity();
+  crosshair.applySize();
+  crosshair.applyHue();
+  crosshair.applyRotation();
+  crosshair.applyOpacity();
 });
 
-ipcMain.on('apply-preset', (event, presetConfig: Config) => {
-    applyPresetFromTray(presetConfig);
+ipcMain.on("apply-preset", (event, presetConfig: Config) => {
+  applyPresetFromTray(presetConfig);
 });
 
-ipcMain.on('config', (event, newConfig: Config) => {
-    config = newConfig;
+ipcMain.on("config", (event, newConfig: Config) => {
+  config = newConfig;
 
-    const selectedCrosshair = getSelectedCrosshairPath();
-    crosshair.setImage(selectedCrosshair || '');
+  const selectedCrosshair = getSelectedCrosshairPath();
+  crosshair.setImage(selectedCrosshair || "");
 
-    crosshair.size = +config.size;
-    crosshair.hue = +config.hue;
-    crosshair.rotation = +config.rotation;
-    crosshair.opacity = +config.opacity;
-    crosshair.fixedPosition = config.fixedPosition || false;
-    crosshair.xPosition = config.xPosition || 0;
-    crosshair.yPosition = config.yPosition || 0;
+  crosshair.size = +config.size;
+  crosshair.hue = +config.hue;
+  crosshair.rotation = +config.rotation;
+  crosshair.opacity = +config.opacity;
+  crosshair.fixedPosition = config.fixedPosition || false;
+  crosshair.xPosition = config.xPosition || 0;
+  crosshair.yPosition = config.yPosition || 0;
 
-    crosshair.applySize();
-    crosshair.applyHue();
-    crosshair.applyRotation();
-    crosshair.applyOpacity();
+  crosshair.applySize();
+  crosshair.applyHue();
+  crosshair.applyRotation();
+  crosshair.applyOpacity();
 });
 
-ipcMain.on('load-canvas-params', (event, params) => {
-    crosshair.window?.webContents.send('load-canvas-params', params);
+ipcMain.on("load-canvas-params", (event, params) => {
+  crosshair.setCanvasParams(params);
+  crosshair.window?.webContents.send("load-canvas-params", params);
 });
 
 /**
  * Retorna lista de todos os monitores disponíveis.
  * Resposta: Array<{ index, id, label, bounds, isPrimary, scaleFactor }>
  */
-ipcMain.on('get-displays', (event) => {
-    const all = screen.getAllDisplays();
-    const primary = screen.getPrimaryDisplay();
+ipcMain.on("get-displays", (event) => {
+  const all = screen.getAllDisplays();
+  const primary = screen.getPrimaryDisplay();
 
-    const list = all.map((d, index) => ({
-        index,
-        id: d.id,
-        label: d.label || `Monitor ${index + 1}`,
-        bounds: d.bounds,         // { x, y, width, height }
-        workArea: d.workArea,     // área sem taskbar
-        scaleFactor: d.scaleFactor,
-        isPrimary: d.id === primary.id,
-    }));
+  const list = all.map((d, index) => ({
+    index,
+    id: d.id,
+    label: d.label || `Monitor ${index + 1}`,
+    bounds: d.bounds, // { x, y, width, height }
+    workArea: d.workArea, // área sem taskbar
+    scaleFactor: d.scaleFactor,
+    isPrimary: d.id === primary.id,
+  }));
 
-    event.reply('displays-list', list);
+  event.reply("displays-list", list);
 });
 
 /**
  * Define o monitor onde a mira será centralizada.
  * target: 'primary' | 'cursor' | number (índice)
  */
-ipcMain.on('set-display', (event, target: 'primary' | 'cursor' | number) => {
-    crosshair.displayTarget = target;
-    if (!crosshair.fixedPosition) {
-        crosshair.setBounds();
-    }
-});
-
-
-ipcMain.on('change-hue', (event, hue) => {
-    crosshair.hue = +hue;
-    crosshair.applyHue();
-});
-
-ipcMain.on('change-size', (event, size) => {
-    crosshair.size = +size;
-    crosshair.applySize();
-});
-
-ipcMain.on('change-rotation', (event, rotation) => {
-    crosshair.rotation = +rotation;
-    crosshair.applyRotation();
-});
-
-ipcMain.on('change-opacity', (event, opacity) => {
-    crosshair.opacity = +opacity;
-    crosshair.applyOpacity();
-});
-
-ipcMain.on('change-fixed-position', (event, fixedPosition) => {
-    crosshair.fixedPosition = fixedPosition;
+ipcMain.on("set-display", (event, target: "primary" | "cursor" | number) => {
+  crosshair.displayTarget = target;
+  if (!crosshair.fixedPosition) {
     crosshair.setBounds();
+  }
 });
 
-ipcMain.on('change-x-position', (event, xPosition) => {
-    crosshair.xPosition = +xPosition;
-    if (crosshair.fixedPosition) {
-        crosshair.setBounds();
-    }
+ipcMain.on("change-hue", (event, hue) => {
+  crosshair.hue = +hue;
+  crosshair.applyHue();
 });
 
-ipcMain.on('change-y-position', (event, yPosition) => {
-    crosshair.yPosition = +yPosition;
-    if (crosshair.fixedPosition) {
-        crosshair.setBounds();
-    }
+ipcMain.on("change-size", (event, size) => {
+  crosshair.size = +size;
+  crosshair.applySize();
 });
 
-ipcMain.on('change-crosshair', (event, name) => {
-    config.crosshair = name;
-    customCrosshair = null;
-    const crosshairFilename = getSelectedCrosshairFilename();
-    crosshair.window?.webContents.send('crosshair-loaded', crosshairFilename);
+ipcMain.on("change-rotation", (event, rotation) => {
+  crosshair.rotation = +rotation;
+  crosshair.applyRotation();
 });
 
-ipcMain.on('error', (event, error) => {
-    console.log(error);
+ipcMain.on("change-opacity", (event, opacity) => {
+  crosshair.opacity = +opacity;
+  crosshair.applyOpacity();
 });
 
-ipcMain.on('destroy-crosshair', () => {
-    crosshair.close();
+ipcMain.on("change-fixed-position", (event, fixedPosition) => {
+  crosshair.fixedPosition = fixedPosition;
+  crosshair.setBounds();
 });
 
-ipcMain.on('show-crosshair', () => {
-    const selectedCrosshair = getSelectedCrosshairPath();
-    crosshair.open(selectedCrosshair || '');
-    crosshair.show();
+ipcMain.on("change-x-position", (event, xPosition) => {
+  crosshair.xPosition = +xPosition;
+  if (crosshair.fixedPosition) {
+    crosshair.setBounds();
+  }
 });
 
-ipcMain.on('hide-crosshair', () => {
-    crosshair.hide();
+ipcMain.on("change-y-position", (event, yPosition) => {
+  crosshair.yPosition = +yPosition;
+  if (crosshair.fixedPosition) {
+    crosshair.setBounds();
+  }
 });
 
-ipcMain.on('open-folder-dialog', async (event) => {
-    const selectedFolder = await dialog.showOpenDialog({
-        title: 'Select Directory',
-        properties: ['openDirectory'],
-    });
-    if (!selectedFolder.canceled) {
-        event.reply('custom-crosshairs-directory', selectedFolder.filePaths[0]);
-    }
+ipcMain.on("change-crosshair", (event, name) => {
+  config.crosshair = name;
+  customCrosshair = null;
+  const crosshairFilename = getSelectedCrosshairFilename();
+  crosshair.window?.webContents.send("crosshair-loaded", crosshairFilename);
 });
 
-ipcMain.on('open-crosshair-directory', (event, directory) => {
-    if (process.platform === 'linux') {
-        childProcess.exec(`xdg-open "${directory}"`);
-    } else if (process.platform === 'win32') {
-        childProcess.exec(`explorer.exe "${directory}"`);
-    } else if (process.platform === 'darwin') {
-        childProcess.exec(`open "${directory}"`);
-    }
+ipcMain.on("error", (event, error) => {
+  console.log(error);
 });
 
-ipcMain.on('refresh-crosshairs', async (event) => {
-    try {
-        if (customCrosshairsDir) {
-            const files = await fs.readdir(customCrosshairsDir);
-            const pngFiles = files.filter((file) => path.extname(file) === '.png' || path.extname(file) === '.svg');
-            event.reply('custom-crosshairs-response', pngFiles);
-        } else {
-            console.log('No directory selected');
-            event.reply('custom-crosshairs-response-fail');
-        }
-    } catch (err) {
-        console.log(err);
-    }
+ipcMain.on("destroy-crosshair", () => {
+  crosshair.close();
 });
 
-ipcMain.on('save-generated-crosshair', async (event, { name, svg }) => {
-    if (!customCrosshairsDir) {
-        event.reply('error', 'No custom directory set');
-        return;
-    }
-
-    try {
-        const fileName = name.endsWith('.svg') ? name : `${name}.svg`;
-        const filePath = path.join(customCrosshairsDir, fileName);
-
-        await fs.writeFile(filePath, svg, 'utf-8');
-
-        event.reply('save-generated-crosshair-success');
-
-        if (customCrosshairsDir) {
-            const files = await fs.readdir(customCrosshairsDir);
-            const validFiles = files.filter((file) => path.extname(file) === '.png' || path.extname(file) === '.svg');
-            window.webContents.send('custom-crosshairs-response', validFiles);
-        }
-
-    } catch (err) {
-        console.error('Failed to save SVG crosshair:', err);
-        event.reply('error', 'Failed to save crosshair');
-    }
+ipcMain.on("show-crosshair", () => {
+  const selectedCrosshair = getSelectedCrosshairPath();
+  crosshair.open(selectedCrosshair || "");
+  crosshair.show();
 });
 
-ipcMain.on('export-presets', async (event, presets) => {
-    const result = await dialog.showSaveDialog({
-        title: 'Export Presets',
-        defaultPath: 'presets.json',
-        filters: [{ name: 'JSON Files', extensions: ['json'] }],
-    });
+ipcMain.on("hide-crosshair", () => {
+  crosshair.hide();
+});
 
-    if (!result.canceled && result.filePath) {
-        try {
-            await fs.writeFile(result.filePath, JSON.stringify(presets, null, 2));
-            event.reply('export-presets-success', result.filePath);
-        } catch (err) {
-            console.error('Failed to write presets file:', err);
-            event.reply('export-presets-fail', (err as Error).message);
-        }
+ipcMain.on("open-folder-dialog", async (event) => {
+  const selectedFolder = await dialog.showOpenDialog({
+    title: "Select Directory",
+    properties: ["openDirectory"],
+  });
+  if (!selectedFolder.canceled) {
+    event.reply("custom-crosshairs-directory", selectedFolder.filePaths[0]);
+  }
+});
+
+ipcMain.on("open-crosshair-directory", (event, directory) => {
+  if (process.platform === "linux") {
+    childProcess.exec(`xdg-open "${directory}"`);
+  } else if (process.platform === "win32") {
+    childProcess.exec(`explorer.exe "${directory}"`);
+  } else if (process.platform === "darwin") {
+    childProcess.exec(`open "${directory}"`);
+  }
+});
+
+ipcMain.on("refresh-crosshairs", async (event) => {
+  try {
+    if (customCrosshairsDir) {
+      const files = await fs.readdir(customCrosshairsDir);
+      const pngFiles = files.filter(
+        (file) =>
+          path.extname(file) === ".png" || path.extname(file) === ".svg",
+      );
+      event.reply("custom-crosshairs-response", pngFiles);
     } else {
-        console.log('Export canceled');
+      console.log("No directory selected");
+      event.reply("custom-crosshairs-response-fail");
     }
+  } catch (err) {
+    console.log(err);
+  }
 });
 
-ipcMain.on('import-presets', async (event) => {
-    const result = await dialog.showOpenDialog({
-        title: 'Import Presets',
-        properties: ['openFile'],
-        filters: [{ name: 'JSON Files', extensions: ['json'] }],
-    });
+ipcMain.on("save-generated-crosshair", async (event, { name, svg }) => {
+  if (!customCrosshairsDir) {
+    event.reply("error", "No custom directory set");
+    return;
+  }
 
-    if (!result.canceled && result.filePaths.length > 0) {
-        try {
-            const data = await fs.readFile(result.filePaths[0], 'utf-8');
-            const presets = JSON.parse(data);
-            event.reply('imported-presets', presets);
-        } catch (err) {
-            console.error('Failed to read presets file:', err);
-            event.reply('import-presets-error', (err as Error).message);
-        }
-    } else {
-        console.log('Import canceled');
+  try {
+    const fileName = name.endsWith(".svg") ? name : `${name}.svg`;
+    const filePath = path.join(customCrosshairsDir, fileName);
+
+    await fs.writeFile(filePath, svg, "utf-8");
+
+    event.reply("save-generated-crosshair-success");
+
+    if (customCrosshairsDir) {
+      const files = await fs.readdir(customCrosshairsDir);
+      const validFiles = files.filter(
+        (file) =>
+          path.extname(file) === ".png" || path.extname(file) === ".svg",
+      );
+      window.webContents.send("custom-crosshairs-response", validFiles);
     }
+  } catch (err) {
+    console.error("Failed to save SVG crosshair:", err);
+    event.reply("error", "Failed to save crosshair");
+  }
 });
 
-ipcMain.on('reveal-crosshair', (_e, fileName: string) => {
-    const dir = customCrosshairsDir;
-    if (!dir) return;
+ipcMain.on("export-presets", async (event, presets) => {
+  const result = await dialog.showSaveDialog({
+    title: "Export Presets",
+    defaultPath: "presets.json",
+    filters: [{ name: "JSON Files", extensions: ["json"] }],
+  });
 
-    const full = path.join(dir, fileName);
-    if (process.platform === 'linux') {
-        const fileUri = `file://${encodeURI(full)}`;
-
-        const dbusCommand = `dbus-send --session --dest=org.freedesktop.FileManager1 --type=method_call ` +
-            `/org/freedesktop/FileManager1 org.freedesktop.FileManager1.ShowItems ` +
-            `array:string:"${fileUri}" string:""`;
-
-        childProcess.exec(dbusCommand, (error, stdout, stderr) => {
-            if (error) {
-                console.warn(`D-Bus command failed to reveal file: ${error.message}. ` +
-                    `Falling back to opening the directory with xdg-open.`);
-                childProcess.exec(`xdg-open "${dir}"`, (err) => {
-                    if (err) {
-                        console.error(`Failed to open directory with xdg-open as fallback: ${err.message}`);
-                    }
-                });
-            } else if (stderr) {
-                console.warn(`D-Bus command had stderr output: ${stderr}`);
-            }
-        });
-    } else if (process.platform === 'win32') {
-        childProcess.exec(`explorer /select,"${full}"`);
-    }
-});
-
-ipcMain.on('delete-crosshair', async (_e, fileName: string) => {
-    const dir = customCrosshairsDir;
-    if (!dir) return;
-
-    const full = path.join(dir, fileName);
+  if (!result.canceled && result.filePath) {
     try {
-        await fs.unlink(full);
-
-        const currentCrosshair = getSelectedCrosshairFilename();
-        if (currentCrosshair === fileName) {
-            customCrosshair = null;
-            config.crosshair = DEFAULT_CONFIG.crosshair;
-
-            const defaultCrosshairPath = getSelectedCrosshairPath();
-            crosshair.setImage(defaultCrosshairPath || '');
-
-            window.webContents.send('crosshair-deleted-cleanup', fileName);
-        }
-
-        window.webContents.send('refresh-crosshairs');
+      await fs.writeFile(result.filePath, JSON.stringify(presets, null, 2));
+      event.reply("export-presets-success", result.filePath);
     } catch (err) {
-        console.error(err);
+      console.error("Failed to write presets file:", err);
+      event.reply("export-presets-fail", (err as Error).message);
     }
+  } else {
+    console.log("Export canceled");
+  }
 });
 
-ipcMain.on('open-svg-editor', (event, filePath) => {
-    const editorWindow = createEditorWindow(filePath);
+ipcMain.on("import-presets", async (event) => {
+  const result = await dialog.showOpenDialog({
+    title: "Import Presets",
+    properties: ["openFile"],
+    filters: [{ name: "JSON Files", extensions: ["json"] }],
+  });
 
-    editorWindow.on('closed', () => {
-        editorWindow.destroy();
-    });
-});
-
-ipcMain.on('about-request', async (event) => {
-    const pkgPath = path.join(app.getAppPath(), 'package.json');
+  if (!result.canceled && result.filePaths.length > 0) {
     try {
-        const pkg = await fs.readFile(pkgPath, 'utf-8');
-        const pkgJson = JSON.parse(pkg);
-        event.reply('about-response', pkgJson);
+      const data = await fs.readFile(result.filePaths[0], "utf-8");
+      const presets = JSON.parse(data);
+      event.reply("imported-presets", presets);
     } catch (err) {
-        console.error('Failed to read package.json:', err);
-        event.reply('about-response', { error: 'Failed to read package.json' });
+      console.error("Failed to read presets file:", err);
+      event.reply("import-presets-error", (err as Error).message);
     }
+  } else {
+    console.log("Import canceled");
+  }
 });
 
-ipcMain.on('download-updates', async () => {
-    try {
-        const url =
-            'https://api.github.com/repos/YSSF8/crosshair-y/releases/latest';
-        const response = await axios.get(url);
-        const data = await response.data;
-        const assets = data.assets;
-        const operatingSystem = `${platform()}-${arch()}`;
+ipcMain.on("reveal-crosshair", (_e, fileName: string) => {
+  const dir = customCrosshairsDir;
+  if (!dir) return;
 
-        const promises = assets.map((asset: any) =>
-            asset.browser_download_url.includes(operatingSystem)
+  const full = path.join(dir, fileName);
+  if (process.platform === "linux") {
+    const fileUri = `file://${encodeURI(full)}`;
+
+    const dbusCommand =
+      `dbus-send --session --dest=org.freedesktop.FileManager1 --type=method_call ` +
+      `/org/freedesktop/FileManager1 org.freedesktop.FileManager1.ShowItems ` +
+      `array:string:"${fileUri}" string:""`;
+
+    childProcess.exec(dbusCommand, (error, stdout, stderr) => {
+      if (error) {
+        console.warn(
+          `D-Bus command failed to reveal file: ${error.message}. ` +
+          `Falling back to opening the directory with xdg-open.`,
         );
+        childProcess.exec(`xdg-open "${dir}"`, (err) => {
+          if (err) {
+            console.error(
+              `Failed to open directory with xdg-open as fallback: ${err.message}`,
+            );
+          }
+        });
+      } else if (stderr) {
+        console.warn(`D-Bus command had stderr output: ${stderr}`);
+      }
+    });
+  } else if (process.platform === "win32") {
+    childProcess.exec(`explorer /select,"${full}"`);
+  }
+});
 
-        const results = await Promise.all(promises);
-        const index = results.findIndex(Boolean);
+ipcMain.on("delete-crosshair", async (_e, fileName: string) => {
+  const dir = customCrosshairsDir;
+  if (!dir) return;
 
-        if (index !== -1) {
-            openurl.open(assets[index].browser_download_url);
-        }
-    } catch (err) {
-        console.log(err);
-        dialog.showErrorBox('Error', (err as Error).message);
+  const full = path.join(dir, fileName);
+  try {
+    await fs.unlink(full);
+
+    const currentCrosshair = getSelectedCrosshairFilename();
+    if (currentCrosshair === fileName) {
+      customCrosshair = null;
+      config.crosshair = DEFAULT_CONFIG.crosshair;
+
+      const defaultCrosshairPath = getSelectedCrosshairPath();
+      crosshair.setImage(defaultCrosshairPath || "");
+
+      window.webContents.send("crosshair-deleted-cleanup", fileName);
     }
+
+    window.webContents.send("refresh-crosshairs");
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+ipcMain.on("open-svg-editor", (event, filePath) => {
+  const editorWindow = createEditorWindow(filePath);
+
+  editorWindow.on("closed", () => {
+    editorWindow.destroy();
+  });
+});
+
+ipcMain.on("about-request", async (event) => {
+  const pkgPath = path.join(app.getAppPath(), "package.json");
+  try {
+    const pkg = await fs.readFile(pkgPath, "utf-8");
+    const pkgJson = JSON.parse(pkg);
+    event.reply("about-response", pkgJson);
+  } catch (err) {
+    console.error("Failed to read package.json:", err);
+    event.reply("about-response", { error: "Failed to read package.json" });
+  }
+});
+
+ipcMain.on("download-updates", async () => {
+  try {
+    const url =
+      "https://api.github.com/repos/YSSF8/crosshair-y/releases/latest";
+    const response = await axios.get(url);
+    const data = await response.data;
+    const assets = data.assets;
+    const operatingSystem = `${platform()}-${arch()}`;
+
+    const promises = assets.map((asset: any) =>
+      asset.browser_download_url.includes(operatingSystem),
+    );
+
+    const results = await Promise.all(promises);
+    const index = results.findIndex(Boolean);
+
+    if (index !== -1) {
+      openurl.open(assets[index].browser_download_url);
+    }
+  } catch (err) {
+    console.log(err);
+    dialog.showErrorBox("Error", (err as Error).message);
+  }
 });

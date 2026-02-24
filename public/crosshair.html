@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crosshair Overlay</title>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data:;">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data:;">
     <style>
         * {
             user-select: none;
@@ -24,14 +26,14 @@
 
         canvas {
             display: block;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
         }
     </style>
 </head>
+
 <body>
     <canvas id="crosshair-canvas"></canvas>
     <script src="./scripts/canvas-crosshair.js"></script>
     <script src="./scripts/crosshair.js"></script>
 </body>
+
 </html>
