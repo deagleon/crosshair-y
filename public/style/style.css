@@ -507,6 +507,73 @@ body.body-settings .section {
   padding-top: calc(var(--default-px) * 2);
 }
 
+/* Override modal size when showing the pixel-draw editor */
+.modal-background .modal-foreground:has(.pixel-draw-wrapper) {
+  flex-basis: auto;
+  width: auto;
+  height: auto;
+}
+
+/* ─── Pixel Draw Editor ──────────────────────────────────────────────────────── */
+
+.pixel-draw-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--default-px) * 1.5);
+  padding: var(--default-px);
+  user-select: none;
+}
+
+.pixel-draw-title {
+  font-size: calc(var(--default-px) * 2);
+  font-weight: bold;
+  color: var(--accent-primary);
+  letter-spacing: 0.5px;
+}
+
+.pixel-grid {
+  --cell: 18px;
+  display: grid;
+  grid-template-columns: repeat(var(--pixel-grid-size, 16), var(--cell));
+  grid-template-rows: repeat(var(--pixel-grid-size, 16), var(--cell));
+  border: 1px solid var(--line-color);
+  border-radius: calc(var(--default-px) / 2);
+  overflow: hidden;
+  cursor: crosshair;
+}
+
+.pixel-cell {
+  width: var(--cell);
+  height: var(--cell);
+  box-sizing: border-box;
+  border-right: 1px solid var(--line-color);
+  border-bottom: 1px solid var(--line-color);
+  background-color: var(--secondary-color);
+  transition: background-color 80ms ease;
+}
+
+.pixel-cell:hover {
+  background-color: var(--tertiary-color);
+}
+
+.pixel-cell.on {
+  background-color: var(--accent-primary);
+}
+
+.pixel-cell.on:hover {
+  background-color: color-mix(in srgb, var(--accent-primary) 80%, white);
+}
+
+.pixel-draw-buttons {
+  display: flex;
+  gap: calc(var(--default-px) * 1.5);
+  width: 100%;
+  justify-content: flex-end;
+}
+
+
+
 .modal-background .modal-foreground .modal-wrapper {
   display: flex;
   flex-direction: column;

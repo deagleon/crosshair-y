@@ -64,6 +64,7 @@ let currentParams = {
   outlineOpacity: 1,
   opacity: 1,
   rotation: 0,
+  pixelData: null,
 };
 
 // Restore the previously saved canvas configuration from localStorage on startup.
@@ -163,6 +164,12 @@ ipcRenderer.on("load-opacity", (event, opacity) => {
 /** Applies a full set of advanced canvas parameters (gap, length, thickness, etc.). */
 ipcRenderer.on("load-canvas-params", (event, params) => {
   currentParams = { ...currentParams, ...params };
+  redraw();
+});
+
+/** Updates the pixel-draw data and redraws the crosshair. */
+ipcRenderer.on("load-pixel-data", (event, pixelData) => {
+  currentParams.pixelData = pixelData;
   redraw();
 });
 

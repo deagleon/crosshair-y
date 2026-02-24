@@ -4,6 +4,9 @@
  * Supports native programmatic styles and external PNG/SVG fallback.
  */
 
+/** Number of cells per side in the pixel-draw grid. */
+const PIXEL_GRID_SIZE = 16;
+
 const CANVAS_STYLES = {
   // ── Classic shapes ──────────────────────────────────────────────────────────
   Classic: drawClassic,
@@ -28,6 +31,9 @@ const CANVAS_STYLES = {
   "Dual Arrow": drawDualArrow,
   Chevron: drawChevron,
   "Angled Brackets": drawAngledBrackets,
+
+  // ── Custom pixel drawing ─────────────────────────────────────────────────────
+  "Pixel Draw": drawPixelCrosshair,
 };
 
 /**
@@ -498,6 +504,53 @@ function drawAngledBrackets(ctx, params) {
   });
 }
 
+// ─── Pixel Draw ───────────────────────────────────────────────────────────────
+
+/**
+ * Pixel Draw crosshair: renders a user-painted 16×16 pixel grid.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Object} params
+ * @param {number[]|null} params.pixelData - Flat array of PIXEL_GRID_SIZE² values (0 or 1).
+ * @param {string}  [params.color]            - Fill color for active pixels.
+ * @param {boolean} [params.outline]          - Draw an outline around active pixels.
+ * @param {number}  [params.outlineThickness] - Outline thickness in px.
+ * @param {string}  [params.outlineColor]     - Outline fill color.
+ * @param {number}  [params.outlineOpacity]   - Outline opacity 0–1.
+ */
+function drawPixelCrosshair(ctx, params) {
+  const { color, outline, outlineThickness, outlineColor, outlineOpacity } = _resolveParams(params);
+
+  const pixelData = params.pixelData;
+  if (!pixelData || pixelData.length !== PIXEL_GRID_SIZE * PIXEL_GRID_SIZE) return;
+
+  // Derive a pixel cell size from the canvas logical dimensions so that the
+  // crosshair scales naturally with the existing Size slider.
+  // The canvas element's CSS width is available via ctx.canvas.style.width.
+  const canvasW = parseFloat(ctx.canvas.style.width) || ctx.canvas.width;
+  // Fill ~70% of the smaller canvas dimension, divided evenly across all cells.
+  const gridPx = Math.floor((Math.min(canvasW, parseFloat(ctx.canvas.style.height) || ctx.canvas.height) * 0.7) / PIXEL_GRID_SIZE);
+  const cellSize = Math.max(1, gridPx);
+
+  const totalSize = cellSize * PIXEL_GRID_SIZE;
+  const offset = totalSize / 2; // Center the grid on the translated origin.
+
+  for (let row = 0; row < PIXEL_GRID_SIZE; row++) {
+    for (let col = 0; col < PIXEL_GRID_SIZE; col++) {
+      if (!pixelData[row * PIXEL_GRID_SIZE + col]) continue;
+
+      const x = col * cellSize - offset;
+      const y = row * cellSize - offset;
+
+      if (outline) {
+        _drawOutlinedRect(ctx, x, y, cellSize, cellSize, outlineThickness, outlineColor, outlineOpacity);
+      }
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, cellSize, cellSize);
+    }
+  }
+}
+
 // ─── External image fallback ──────────────────────────────────────────────────
 
 /** Cached Image elements keyed by image path to avoid repeated network requests. */
@@ -567,6 +620,9 @@ const STYLE_PRESETS = {
   "Dual Arrow": { thickness: 2, gap: 4, length: 12 },
   "Chevron": { thickness: 2, gap: 4, length: 10 },
   "Angled Brackets": { thickness: 2, gap: 8, length: 14 },
+
+  // Custom pixel drawing — no classic sizing params apply
+  "Pixel Draw": {},
 };
 
 /**
@@ -579,4 +635,5 @@ window.CanvasCrosshair = {
   draw: drawCrosshair,
   styles: Object.keys(CANVAS_STYLES),
   presets: STYLE_PRESETS,
+  pixelGridSize: PIXEL_GRID_SIZE,
 };

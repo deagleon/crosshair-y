@@ -1053,6 +1053,23 @@ settings.addEventListener("click", () => {
     const canvasOutlineThicknessInput = frameBody.querySelector("#canvas-outline-thickness-input");
     const canvasOutlineOpacityInput = frameBody.querySelector("#canvas-outline-opacity-input");
 
+    // Pixel Draw editor button (only visible when Pixel Draw style is selected)
+    const openPixelDrawBtn = frameBody.querySelector("#open-pixel-draw");
+
+    // Items that should be hidden when Pixel Draw mode is active
+    const pixelDrawHiddenItems = [
+      frameBody.querySelector("#canvas-gap-input")?.closest(".item"),
+      frameBody.querySelector("#canvas-length-input")?.closest(".item"),
+      frameBody.querySelector("#canvas-thickness-input")?.closest(".item"),
+      frameBody.querySelector("#canvas-dot-toggle")?.closest(".item"),
+    ].filter(Boolean);
+
+    /** Switches the canvas settings UI between Pixel Draw mode and normal mode. */
+    function setPixelDrawMode(active) {
+      pixelDrawHiddenItems.forEach((el) => el.style.setProperty("display", active ? "none" : ""));
+      if (openPixelDrawBtn) openPixelDrawBtn.style.display = active ? "" : "none";
+    }
+
     // Populate Style Select
     if (canvasStyleSelect && frame.contentWindow.CanvasCrosshair) {
       canvasStyleSelect.innerHTML = "";
@@ -1149,6 +1166,9 @@ settings.addEventListener("click", () => {
         canvasDotToggle.checked = preset.dot;
       }
 
+      // Toggle Pixel Draw mode UI
+      setPixelDrawMode(styleName === "Pixel Draw");
+
       // Salva e envia tudo de uma vez
       localStorage.setItem("canvas-config", JSON.stringify(newParams));
       ipcRenderer.send("load-canvas-params", newParams);
@@ -1156,6 +1176,23 @@ settings.addEventListener("click", () => {
       // Atualiza o crosshair selecionado no config principal
       config.crosshair = `canvas:${styleName}`;
       localStorage.setItem("config", JSON.stringify(config));
+    });
+
+    // Apply initial Pixel Draw mode state based on current saved style
+    setPixelDrawMode((savedCanvas.style || "Classic") === "Pixel Draw");
+
+    // Open the pixel editor modal when the button is clicked
+    openPixelDrawBtn?.addEventListener("click", () => {
+      const existing = getCanvasParams().pixelData ?? null;
+      const frameWin = frame.contentWindow;
+
+      // openPixelDrawModal is defined in pixel-draw.js, loaded inside the settings iframe
+      if (typeof frameWin.openPixelDrawModal === "function") {
+        frameWin.openPixelDrawModal(existing, (pixelData) => {
+          sendCanvasParams({ pixelData });
+          ipcRenderer.send("load-pixel-data", pixelData);
+        });
+      }
     });
 
     canvasColorInput?.addEventListener("input", () => {
